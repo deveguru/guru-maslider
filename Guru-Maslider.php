@@ -2,7 +2,7 @@
 /**
  * Plugin Name:       Guru MaSlider
  * Description:       A professional slider and grid builder for WordPress with 9 fully responsive layouts, advanced styling, and AJAX term selection.
- * Version:           3.2.0
+ * Version:           3.3.1
  * Author:            alireza fatemi
  * Author URI:        https://alirezafatemi.ir
  * Plugin URI:        https://github.com/deveguru
@@ -54,7 +54,7 @@ final class Guru_MaSlider_Advanced {
             wp_enqueue_script('wp-color-picker');
             wp_add_inline_style('wp-color-picker', '.wp-color-result-text { direction: ltr; }');
             wp_add_inline_script('wp-color-picker', 'jQuery(function($){$(".gms-color-picker").wpColorPicker();});');
-            wp_add_inline_style('wp-admin', '#gms-tabs-panel .nav-tab{font-size:14px;padding:10px 16px}#gms-tabs-panel .tabs-panel{display:none;padding:20px;background:#fff;border:1px solid #ccd0d4;border-top:0}#gms-tabs-panel .tabs-panel.active{display:block}.gms-style-group{display:none;padding-top:15px;border-top:1px dashed #ddd;margin-top:15px}.gms-style-group.active{display:block}.gms-ajax-select{width:100%}.ts-wrapper{direction:rtl!important}');
+            wp_add_inline_style('wp-admin', '#gms-tabs-panel .nav-tab{font-size:14px;padding:10px 16px}#gms-tabs-panel .tabs-panel{display:none;padding:20px;background:#fff;border:1px solid #ccd0d4;border-top:0}#gms-tabs-panel .tabs-panel.active{display:block}.gms-style-group{display:none;padding-top:15px;border-top:1px dashed #ddd;margin-top:15px}.gms-style-group.active{display:block}#gms-product-filter-row{display:none}.gms-ajax-select{width:100%}.ts-wrapper{direction:rtl!important}');
             wp_add_inline_script('post', '
             document.addEventListener("DOMContentLoaded", function() {
                 const tabs = document.querySelectorAll("#gms-tabs-panel .nav-tab");
@@ -83,6 +83,18 @@ final class Guru_MaSlider_Advanced {
                 }
                 layoutSelect.addEventListener("change", toggleStyleGroups);
                 toggleStyleGroups();
+
+                const contentTypeSelect = document.getElementById("gms_content_type");
+                const productFilterRow = document.getElementById("gms-product-filter-row");
+                function toggleProductFilter() {
+                    if (contentTypeSelect.value === "product") {
+                        productFilterRow.style.display = "table-row";
+                    } else {
+                        productFilterRow.style.display = "none";
+                    }
+                }
+                contentTypeSelect.addEventListener("change", toggleProductFilter);
+                toggleProductFilter();
             });');
         }
     }
@@ -109,8 +121,8 @@ final class Guru_MaSlider_Advanced {
         $meta = $args['meta']; $key = $args['key']; $default = $args['default'] ?? '';
         $value = $meta[$key][0] ?? $default;
         $label = $args['label']; $type = $args['type']; $options = $args['options'] ?? [];
-        $desc = $args['desc'] ?? ''; $class = $args['class'] ?? 'regular-text';
-        echo '<tr><th><label for="gms_' . esc_attr($key) . '">' . esc_html($label) . '</label></th><td>';
+        $desc = $args['desc'] ?? ''; $class = $args['class'] ?? 'regular-text'; $tr_id = $args['tr_id'] ?? '';
+        echo '<tr' . ($tr_id ? ' id="' . esc_attr($tr_id) . '"' : '') .'><th><label for="gms_' . esc_attr($key) . '">' . esc_html($label) . '</label></th><td>';
         switch ($type) {
             case 'select':
                 echo '<select name="' . esc_attr($key) . '" id="gms_' . esc_attr($key) . '">';
@@ -140,16 +152,18 @@ final class Guru_MaSlider_Advanced {
         if (!is_array($style_meta)) $style_meta = [];
         $merged_meta = array_merge($meta, array_map(fn($v) => [$v], $style_meta));
         $layouts = ['1'=>'طرح ۱ - گرید ساده','2'=>'طرح ۲ - اسلایدر درگ','3'=>'طرح ۳ - کارت‌های بزرگ','4'=>'طرح ۴ - گالری تصاویر','5'=>'طرح ۵ - اسلایدر پرسپکتیو','6'=>'طرح ۶ - گرید مینیمال','7'=>'طرح ۷ - کارت‌های تمام‌عرض','8'=>'طرح ۸ - لیست عمودی','9'=>'طرح ۹ - گرید نامتقارن'];
+        $product_filters = ['default' => 'پیش‌فرض (بر اساس تاریخ)', 'popularity' => 'محصولات پرفروش', 'price_desc' => 'گران‌ترین محصولات', 'price_asc' => 'ارزان‌ترین محصولات', 'views' => 'پربازدیدترین محصولات'];
         
         echo '<div id="gms-tabs-panel">';
         echo '<h2 class="nav-tab-wrapper"><a href="#gms-tab-general" class="nav-tab nav-tab-active">تنظیمات عمومی</a><a href="#gms-tab-style" class="nav-tab">تنظیمات استایل</a></h2>';
         echo '<div id="gms-tab-general" class="tabs-panel active"><table class="form-table">';
         $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'layout', 'label' => 'طرح نمایش', 'type' => 'select', 'options' => $layouts]);
         $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'content_type', 'label' => 'منبع محتوا', 'type' => 'select', 'options' => ['post' => 'نوشته‌ها', 'product' => 'محصولات ووکامرس']]);
-        $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'categories', 'label' => 'دسته‌بندی‌ها', 'type' => 'ajax_select', 'taxonomy' => 'category', 'desc' => 'شروع به تایپ نام دسته‌بندی کنید.']);
-        $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'tags', 'label' => 'برچسب‌ها', 'type' => 'ajax_select', 'taxonomy' => 'post_tag', 'desc' => 'شروع به تایپ نام برچسب کنید.']);
+        $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'product_filter', 'label' => 'فیلتر محصولات', 'type' => 'select', 'options' => $product_filters, 'tr_id' => 'gms-product-filter-row', 'desc' => 'این فیلترها فقط برای محصولات ووکامرس اعمال می‌شوند.']);
+        $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'categories', 'label' => 'دسته‌بندی‌ها', 'type' => 'ajax_select', 'taxonomy' => 'category', 'desc' => 'شروع به تایپ نام دسته‌بندی کنید (برای نوشته‌ها و محصولات).']);
+        $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'tags', 'label' => 'برچسب‌ها', 'type' => 'ajax_select', 'taxonomy' => 'post_tag', 'desc' => 'شروع به تایپ نام برچسب کنید (برای نوشته‌ها و محصولات).']);
         $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'count', 'label' => 'تعداد آیتم', 'type' => 'number', 'default' => 8]);
-        $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'orderby', 'label' => 'مرتب‌سازی', 'type' => 'select', 'options' => ['date' => 'تاریخ', 'title' => 'عنوان', 'rand' => 'تصادفی']]);
+        $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'orderby', 'label' => 'مرتب‌سازی', 'type' => 'select', 'options' => ['date' => 'تاریخ', 'title' => 'عنوان', 'rand' => 'تصادفی'], 'desc' => 'در صورت انتخاب فیلتر خاص برای محصولات، این گزینه نادیده گرفته می‌شود.']);
         $this->render_metabox_field(['meta' => $merged_meta, 'key' => 'order', 'label' => 'ترتیب', 'type' => 'select', 'options' => ['DESC' => 'نزولی', 'ASC' => 'صعودی']]);
         echo '</table></div>';
         
@@ -179,9 +193,15 @@ final class Guru_MaSlider_Advanced {
                 new TomSelect(el, {
                     valueField: 'id', labelField: 'text', searchField: 'text', create: false,
                     load: function(query, callback) {
+                        const contentType = document.getElementById('gms_content_type').value;
+                        let taxonomy = el.dataset.taxonomy;
+                        if (contentType === 'product') {
+                            if (taxonomy === 'category') taxonomy = 'product_cat';
+                            if (taxonomy === 'post_tag') taxonomy = 'product_tag';
+                        }
                         fetch('<?php echo $ajax_url; ?>', {
                             method: 'POST', headers: {'Content-Type': 'application/x-www-form-urlencoded'},
-                            body: new URLSearchParams({'action':'gms_get_terms','nonce':'<?php echo $nonce; ?>','taxonomy':el.dataset.taxonomy,'search':query})
+                            body: new URLSearchParams({'action':'gms_get_terms','nonce':'<?php echo $nonce; ?>','taxonomy':taxonomy,'search':query})
                         }).then(res => res.json()).then(data => callback(data)).catch(() => callback());
                     }
                 });
@@ -193,7 +213,7 @@ final class Guru_MaSlider_Advanced {
 
     public function save_metadata($post_id) {
         if (!isset($_POST['guru_slider_nonce_field']) || !wp_verify_nonce($_POST['guru_slider_nonce_field'], 'guru_slider_nonce') || (defined('DOING_AUTOSAVE') && DOING_AUTOSAVE) || !current_user_can('edit_post', $post_id)) return;
-        $fields = ['layout', 'content_type', 'count', 'orderby', 'order'];
+        $fields = ['layout', 'content_type', 'product_filter', 'count', 'orderby', 'order'];
         foreach ($fields as $field) if (isset($_POST[$field])) update_post_meta($post_id, $field, sanitize_text_field($_POST[$field]));
         $tax_fields = ['categories', 'tags'];
         foreach($tax_fields as $tax_field) if (isset($_POST[$tax_field])) update_post_meta($post_id, $tax_field, array_map('intval', $_POST[$tax_field])); else delete_post_meta($post_id, $tax_field);
@@ -209,18 +229,46 @@ final class Guru_MaSlider_Advanced {
     public function render_shortcode($atts) {
         $atts = shortcode_atts(['id' => 0], $atts, 'guru_maslider');
         $id = intval($atts['id']);
-        if (!$id || get_post_type($id) !== 'guru_slider') return '<!-- Invalid Guru MaSlider ID -->';
+        if (!$id || get_post_type($id) !== 'guru_slider') return '';
         self::$rendered_sliders[$id] = true;
         $meta = get_post_meta($id);
         $get = fn($k, $d='') => $meta[$k][0] ?? $d;
-        $settings = ['layout'=>$get('layout','1'),'type'=>$get('content_type','post'),'count'=>$get('count',8),'orderby'=>$get('orderby','date'),'order'=>$get('order','DESC'),'cats'=>unserialize($get('categories','a:0:{}')),'tags'=>unserialize($get('tags','a:0:{}')),'style'=>get_post_meta($id,'_gms_style',true)?:[]];
+        $settings = ['layout'=>$get('layout','1'),'type'=>$get('content_type','post'), 'product_filter'=>$get('product_filter','default'),'count'=>$get('count',8),'orderby'=>$get('orderby','date'),'order'=>$get('order','DESC'),'cats'=>maybe_unserialize($get('categories','a:0:{}')),'tags'=>maybe_unserialize($get('tags','a:0:{}')),'style'=>get_post_meta($id,'_gms_style',true)?:[]];
+        
         $post_type = ($settings['type'] === 'product' && class_exists('WooCommerce')) ? 'product' : 'post';
-        $args = ['post_type' => $post_type, 'posts_per_page' => $settings['count'], 'orderby' => $settings['orderby'], 'order' => $settings['order'], 'post_status' => 'publish'];
+        $args = ['post_type' => $post_type, 'posts_per_page' => $settings['count'], 'post_status' => 'publish', 'orderby' => $settings['orderby'], 'order' => $settings['order']];
+
+        if ($post_type === 'product' && $settings['product_filter'] !== 'default') {
+            switch ($settings['product_filter']) {
+                case 'popularity':
+                    $args['meta_key'] = 'total_sales';
+                    $args['orderby'] = 'meta_value_num';
+                    $args['order'] = 'DESC';
+                    break;
+                case 'price_desc':
+                    $args['meta_key'] = '_price';
+                    $args['orderby'] = 'meta_value_num';
+                    $args['order'] = 'DESC';
+                    break;
+                case 'price_asc':
+                    $args['meta_key'] = '_price';
+                    $args['orderby'] = 'meta_value_num';
+                    $args['order'] = 'ASC';
+                    break;
+                case 'views':
+                    $args['meta_key'] = 'post_views_count';
+                    $args['orderby'] = 'meta_value_num';
+                    $args['order'] = 'DESC';
+                    break;
+            }
+        }
+        
         $tax_query = [];
         if (!empty($settings['cats'])) $tax_query[] = ['taxonomy' => ($post_type === 'product' ? 'product_cat' : 'category'), 'field' => 'term_id', 'terms' => $settings['cats']];
         if (!empty($settings['tags'])) $tax_query[] = ['taxonomy' => ($post_type === 'product' ? 'product_tag' : 'post_tag'), 'field' => 'term_id', 'terms' => $settings['tags']];
         if(count($tax_query) > 1) $tax_query['relation'] = 'OR';
         if(!empty($tax_query)) $args['tax_query'] = $tax_query;
+        
         $query = new WP_Query($args);
         ob_start();
         if ($query->have_posts()) {
@@ -231,7 +279,23 @@ final class Guru_MaSlider_Advanced {
     }
     
     private function get_img($size, $fallback_dims) { return get_the_post_thumbnail_url(get_the_ID(), $size) ?: "https://via.placeholder.com/{$fallback_dims}"; }
-    private function render_layout_1($q, $id, $s) { echo '<div id="gms-'.$id.'" class="gms-container"><section class="latest-products-section"><div class="products-grid">'; while ($q->have_posts()) : $q->the_post(); printf('<a href="%s" class="product-card" style="animation-delay:%.1fs;"><img src="%s" alt="%s" class="product-image"><h3 class="product-title">%s</h3></a>', esc_url(get_permalink()), $this->get_img('thumbnail','80x80'), esc_attr(get_the_title()), esc_html(get_the_title())); endwhile; echo '</div></section></div>'; }
+    
+    private function render_layout_1($q, $id, $s) { 
+        echo '<div id="gms-'.$id.'" class="gms-container"><section class="latest-products-section"><div class="products-grid">'; 
+        $delay_counter = 0;
+        while ($q->have_posts()) : $q->the_post(); 
+            printf('<a href="%s" class="product-card" style="animation-delay:%.1fs;"><img src="%s" alt="%s" class="product-image"><h3 class="product-title">%s</h3></a>', 
+                esc_url(get_permalink()),
+                $delay_counter * 0.1,
+                $this->get_img('thumbnail','80x80'), 
+                esc_attr(get_the_title()), 
+                esc_html(get_the_title())
+            );
+            $delay_counter++;
+        endwhile; 
+        echo '</div></section></div>'; 
+    }
+
     private function render_layout_2($q, $id, $s) { echo '<div id="gms-'.$id.'" class="gms-container"><div class="maz-drag-slider-wrapper"><section class="slider-section"><div class="slider-container"><div class="slider-track">'; while ($q->have_posts()) : $q->the_post(); printf('<a href="%s" class="product-card"><img src="%s" alt="%s" class="product-image"><div class="product-content"><h3 class="product-title">%s</h3><p class="product-description">%s</p><span class="product-button">مشاهده</span></div></a>', esc_url(get_permalink()), $this->get_img('medium','300x220'), esc_attr(get_the_title()), esc_html(get_the_title()), esc_html(wp_trim_words(get_the_excerpt(), 12, '...'))); endwhile; echo '</div></div></section></div></div>'; }
     private function render_layout_3($q, $id, $s) { echo '<div id="gms-'.$id.'" class="gms-container"><div class="maz-category-card-wrapper"><section class="category-section"><div class="category-grid">'; while ($q->have_posts()) : $q->the_post(); printf('<a href="%s" class="category-card"><img src="%s" alt="%s" class="card-background"><div class="card-overlay"></div><div class="card-content"><h3 class="card-title">%s</h3></div></a>', esc_url(get_permalink()), $this->get_img('large','600x400'), esc_attr(get_the_title()), esc_html(get_the_title())); endwhile; echo '</div></section></div></div>'; }
     private function render_layout_4($q, $id, $s) { echo '<div id="gms-'.$id.'" class="gms-container"><div class="maz-image-gallery-section"><div class="maz-gallery-container"><div class="maz-image-grid">'; while ($q->have_posts()) : $q->the_post(); printf('<a href="%s" class="maz-image-card"><img class="maz-image-card-bg" src="%s" alt="%s"><div class="maz-image-card-overlay"><h3 class="maz-image-card-title">%s</h3></div></a>', esc_url(get_permalink()), $this->get_img('medium_large','400x400'), esc_attr(get_the_title()), esc_html(get_the_title())); endwhile; echo '</div></div></div></div>'; }
